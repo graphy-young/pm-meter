@@ -4,10 +4,8 @@ import datetime
 
 sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
 
-try:
-    timestamp, pm10, pm25 = sensor.read().split(',')
-    #print(data)
-    os.system('echo {timestamp}, {pm10}, {pm25}')
-    
-except:
-        print('error occured')
+timestamp, pm10, pm25 = str(sensor.read()).split(',')
+print(timestamp)
+print(pm10)
+print(pm25)
+#os.system('echo {timestamp}, {pm10}, {pm25}')
