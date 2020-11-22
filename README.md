@@ -16,3 +16,6 @@ source for research projects
 * honeywell_hpma115s0
 * os
 * pymysql
+
+# Memo
+Original Arduino(.ino) file were removed cuz some hardware had changed!
