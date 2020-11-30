@@ -1,4 +1,4 @@
-# pm-meter
+# rasPMeter
 source for research projects
 
 # Requirements
