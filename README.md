@@ -1,4 +1,4 @@
-# rasPMeter
+# rasp-measure
 source for research projects
 
 # Requirements
