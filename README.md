@@ -2,15 +2,11 @@
 source for research projects
 
 # Requirements
-### Hardware
 * Raspberry Pi 3 or newer (3 model recommended for less voltage use)
-** Raspbian OS or Debian Linux
-** Python 3
+  * Raspbian OS or Debian Linux
+  * Python 3
 * Honeywell HPMA115S0-XXX
-* database server to record measured data
-
-### Software
-* MySQL database server
+* MySQL database server to record measured data
 
 ### External libraries
 * honeywell_hpma115s0
