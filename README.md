@@ -12,10 +12,10 @@ source for research projects
 * Python 3
 * MySQL database server
 
-### Library
+### External libraries
 * honeywell_hpma115s0
-* os
 * pymysql
+* pandas
 
 # Memo
 * Need `keys.py` which have database connection information in same directory 
