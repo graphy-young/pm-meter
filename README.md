@@ -18,4 +18,5 @@ source for research projects
 * pymysql
 
 # Memo
-Original Arduino(.ino) file were removed cuz some hardware had changed!
+* Need `keys.py` which have database connection information in same directory 
+* Original Arduino(.ino) file were removed for some hardware changes!
