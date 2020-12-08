@@ -37,8 +37,8 @@ try:
     sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
 
 except Exception as e:
-
-    logError(1, e, ('Sensor communication failed! ERROR: ' + str(e)))
+    msg = ('Sensor communication failed! ERROR: ' + str(e))
+    logError(1, e, msg)
 
 logger('Connection to sensor established successfully')
 
