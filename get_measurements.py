@@ -1,7 +1,8 @@
 ''' Module import '''
 import honeywell_hpma115s0 as hw
 import os, sys, datetime
-import pymysql, keys
+import pymysql
+import keys
 import pandas as pd
 from datetime import datetime
 
@@ -14,21 +15,35 @@ def logger(self, *args):
     """
     print('[' + str(datetime.now()) + ']', str(' '.join(args)))
 
+def getSerial():
+  # Extract serial from cpuinfo file
+  cpuserial = "0000000000000000"
+  try:
+    f = open('/proc/cpuinfo','r')
+    for line in f:
+      if line[0:6]=='Serial':
+        cpuserial = line[10:26]
+    f.close()
+  except:
+    cpuserial = "ERROR000000000"
 
-def logError(stationCode, er, escapeMessage):
+  return cpuserial
 
-    stationCode = str(stationCode)
+def logError(er, escapeMessage):
+
+    stationCode = getSerial()
     updated_at = str(datetime.now())
     errors = str(er)
     errorData = '{station_code}, {updated_at}, 2, {errors}'
 
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
-                                user=keys.userName, password=keys.password, 
-                                database=keys.dbName)
+                                    user=keys.userName, password=keys.password, 
+                                    database=keys.dbName)
         cursor = connection.cursor()
         if os.path.isfile('error.csv'):
-            errorFile = pd.read_csv('error.csv', encoding='utf-8')
+            logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
+            errorFile = pd.read_csv('error.csv', encoding='utf-8', header=None)
             # DataFrame to MySQL server 기능넣기
         query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
                     VALUES ({stationCode}, {updated_at}, 2, {errors})"""
@@ -48,12 +63,14 @@ def logError(stationCode, er, escapeMessage):
     from sys import exit
     exit()
 
+
+
 # Connect to Honeywell HPMA115S0-XXX sensor
 try:
     sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
 except Exception as e:
     msg = ('Sensor communication failed! ERROR: ' + str(e))
-    logError('1', e, msg)
+    logError(str(e), msg)
 logger('Connection to sensor established successfully')
 
 
@@ -62,7 +79,7 @@ try:
     measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
 except Exception as e:
     msg = 'Getting data from sensor failed. ERROR:' + str(e)
-    logError('1', str(e), msg)
+    logError(str(e), msg)
 logger('measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
 os.system('echo {measuredTime}, {pm10}, {pm25}')
 
