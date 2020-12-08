@@ -5,50 +5,67 @@ import pymysql, keys
 import pandas as pd
 from datetime import datetime
 
-''' function definition  '''
 
+
+''' function definition  '''
 def logger(self, *args):
     """
     All parameters should be on string-type!
     """
     print('[' + str(datetime.now()) + ']', str(' '.join(args)))
 
+
 def logError(stationCode, er, escapeMessage):
 
-        station_code = stationCode
-        update_at = str(datetime.now())
-        errors = str(er)
-        errorData = '{station_code}, {update_at}, 2, {errors}'
+    stationCode = str(stationCode)
+    updated_at = str(datetime.now())
+    errors = str(er)
+    errorData = '{station_code}, {updated_at}, 2, {errors}'
 
-    with open('error.csv', 'a') as f:
+    try:
+        connection = pymysql.connect(host=keys.host, port=keys.port, 
+                                user=keys.userName, password=keys.password, 
+                                database=keys.dbName)
+        cursor = connection.cursor()
         if os.path.isfile('error.csv'):
-            f.write('\n')
-        else:
-            pass
-        f.write(errorData)
-    
+            errorFile = pd.read_csv('error.csv', encoding='utf-8')
+            # DataFrame to MySQL server 기능넣기
+        query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
+                    VALUES ({stationCode}, {updated_at}, 2, {errors})"""
+        cursor.execute(query)
+        connection.commit()
+    except Exception as e:
+        with open('error.csv', 'a', encoding='utf8') as f:
+            if os.path.isfile('error.csv'):
+                f.write('\n')
+            else:
+                pass
+            f.write(errorData)
+    finally:
+        connection.close()
+
     logger(escapeMessage)
     from sys import exit
     exit()
 
 # Connect to Honeywell HPMA115S0-XXX sensor
 try:
-
     sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
-
 except Exception as e:
     msg = ('Sensor communication failed! ERROR: ' + str(e))
-    logError(1, e, msg)
-
+    logError('1', e, msg)
 logger('Connection to sensor established successfully')
+
 
 # Get datetime & pollution data from the sensor
 try:
     measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
 except Exception as e:
-    escape('Getting data from sensor failed. ERROR:', e)
+    msg = 'Getting data from sensor failed. ERROR:' + str(e)
+    logError('1', str(e), msg)
 logger('measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
 os.system('echo {measuredTime}, {pm10}, {pm25}')
+
 
 
 ''' Codes '''
