@@ -7,30 +7,30 @@ import pandas as pd
 from datetime import datetime
 
 
-
 ''' function definition  '''
 def logger(self, *args):
     """
-    All parameters should be on string-type!
+        All parameters should be on string-type!
     """
     print('[' + str(datetime.now()) + ']', str(' '.join(args)))
 
 def getSerial():
-  # Extract serial from cpuinfo file
-  cpuserial = "0000000000000000" # 16 bytes
+  """ 
+    Extract serial from cpuinfo file
+  """
+  cpuSerial = "0000000000000000" # 16 bytes
   try:
     f = open('/proc/cpuinfo','r')
     for line in f:
       if line[0:6]=='Serial':
-        cpuserial = line[10:26]
+        cpuSerial = line[10:26]
     f.close()
   except:
-    cpuserial = "ERROR000000000"
+    cpuSerial = "ERROR000000000"
 
-  return cpuserial
+  return cpuSerial
 
 def logError(er, escapeMessage):
-
     stationCode = getSerial()
     updatedAt = str(datetime.now())
     errors = str(er)
@@ -72,28 +72,25 @@ def logError(er, escapeMessage):
 
 
 
-# Connect to Honeywell HPMA115S0-XXX sensor
-try:
-    sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
-except Exception as e:
-    msg = ('Sensor communication failed! ERROR: ' + str(e))
-    logError(str(e), msg)
-logger('Connection to sensor established successfully')
-
-
-# Get datetime & pollution data from the sensor
-try:
-    measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
-except Exception as e:
-    msg = 'Getting data from sensor failed. ERROR:' + str(e)
-    logError(str(e), msg)
-logger('measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
-os.system('echo {measuredTime}, {pm10}, {pm25}')
-
-
-
 ''' Codes '''
 if __name__ == "__main__":
+    # Connect to Honeywell HPMA115S0-XXX sensor
+    try:
+        sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
+    except Exception as e:
+        msg = ('Sensor communication failed! ERROR: ' + str(e))
+        logError(str(e), msg)
+    logger('Connection to sensor established successfully')
+
+    # Get datetime & pollution data from the sensor
+    try:
+        measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
+    except Exception as e:
+        msg = 'Getting data from sensor failed. ERROR:' + str(e)
+        logError(str(e), msg)
+    logger('measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
+    os.system('echo {measuredTime}, {pm10}, {pm25}')
+
     fileName = 'measurements.csv'
     if os.path.isfile(fileName):
         try:
