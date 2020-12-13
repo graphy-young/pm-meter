@@ -17,7 +17,7 @@ def logger(self, *args):
 
 def getSerial():
   # Extract serial from cpuinfo file
-  cpuserial = "0000000000000000"
+  cpuserial = "0000000000000000" # 16 bytes
   try:
     f = open('/proc/cpuinfo','r')
     for line in f:
@@ -32,9 +32,9 @@ def getSerial():
 def logError(er, escapeMessage):
 
     stationCode = getSerial()
-    updated_at = str(datetime.now())
+    updatedAt = str(datetime.now())
     errors = str(er)
-    errorData = '{station_code}, {updated_at}, 2, {errors}'
+    errorData = '{stationCode}, {updatedAt}, 2, {errors}'
 
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
@@ -44,21 +44,28 @@ def logError(er, escapeMessage):
         if os.path.isfile('error.csv'):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
             errorFile = pd.read_csv('error.csv', encoding='utf-8', header=None)
-            # DataFrame to MySQL server 기능넣기
+            errorFile = list(errorFile.to_records(index=False))
+            query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
+                        VALUES (%s, %s, %s, %s)"""
+            cursor.executemany(query, errorFile)
+            connection.commit()
+            if int(cursor.rowcount) > 1:
+                messageVerb = 'were'
+            else:
+                messageVerb = 'was'
+            logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
         query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
                     VALUES ({stationCode}, {updated_at}, 2, {errors})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
+        errorData = '{stationCode}, {updatedAt}, 2, {e}'
         with open('error.csv', 'a', encoding='utf8') as f:
             if os.path.isfile('error.csv'):
                 f.write('\n')
-            else:
-                pass
             f.write(errorData)
     finally:
         connection.close()
-
     logger(escapeMessage)
     from sys import exit
     exit()
