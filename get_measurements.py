@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     try:
         os.system('sudo rdate -s time.bora.net')
-        logger('system time sync got successful')
+        logger('System time sync got successful')
     except Exception as e:
         msg = ('time sync got failed! Error: ' + str(e))
         logError(e, msg)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # Get datetime & pollution data from the sensor
     try:
         measuredDatetime, pm10, pm25 = str(sensor.read()).split(',')
-        logger(f'measuredDatetime: {measuredDatetime}, PM10: {pm10}, PM25: {pm25}')
+        logger(f'[DATA] measuredDatetime: {measuredDatetime}, PM10: {pm10}, PM25: {pm25}')
     except Exception as e:
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
         logError(str(e), msg)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             logger(f'Found previous {mTableName} that could not be sent properly to DB server. Try again to save those...')
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
             measurementFile = list(measurementFile.to_records(index=False))
-            query = 'INSERT INTO ' + mTableName + """ (stationCode, measuredDatetime, pm10, pm25) 
+            query = 'INSERT INTO `' + mTableName + """` (stationCode, measuredDatetime, pm10, pm25) 
                        VALUES (%s, %s, %s, %s)"""
             cursor.executemany(query, measurementFile)
             connection.commit()
@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
         query = f"""INSERT INTO {mTableName} (stationCode, measuredDatetime, pm10, pm25)
-                    VALUES ({getSerial()}, {datetime.now(), {pm10}, {pm25}})"""
+                    VALUES ({getSerial()}, {datetime.now()}, {pm10}, {pm25})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
