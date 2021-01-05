@@ -33,7 +33,7 @@ def getSerial():
 
 def logError(er, *args):
     stationCode = getSerial()
-    updatedAt = str(datetime.now())
+    updatedAt = str(datetime.now())[:-7]
     errors = str(er)
     errorData = f'{stationCode}, {updatedAt}, 2, {errors}'
     escapeMessage = str(' '.join(args))
