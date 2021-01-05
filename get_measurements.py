@@ -106,7 +106,7 @@ if __name__ == "__main__":
         cursor = connection.cursor()
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
-        if os.path.isfile(mFileName): # Table name 수정
+        if os.path.isfile(mFileName):
             logger(f'Found previous {mTableName} that could not be sent properly to DB server. Try again to save those...')
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
             measurementFile = list(measurementFile.to_records(index=False))
@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
         query = f"""INSERT INTO {mTableName} (stationCode, measuredDatetime, pm10, pm25)
-                    VALUES ({getSerial()}, {datetime.now()}, {pm10}, {pm25})"""
+                    VALUES ({getSerial()}, {str(datetime.now())}, {pm10}, {pm25})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
