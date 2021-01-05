@@ -73,7 +73,7 @@ def logError(er, escapeMessage):
     exit()
 
 logger('test', 'test2')
-"""
+
 ''' Codes '''
 if __name__ == "__main__":
     # Connect to Honeywell HPMA115S0-XXX sensor
@@ -98,4 +98,4 @@ if __name__ == "__main__":
         try:
             df = pd.read_csv(fileName, encoding='utf-8')
         except UnicodeDecodeError:
-            df = pd.read_csv(fileName, encoding='cp949')"""
+            df = pd.read_csv(fileName, encoding='cp949')
