@@ -8,13 +8,13 @@ from datetime import datetime
 
 
 ''' function definition  '''
-def logger(self, *args):
+def logger(*args):
     """
         All parameters should be on string-type!
     """
-    msg = str('[' + str(datetime.now()) + ']', str(' '.join(args)))
+    msg = '[' + str(datetime.now()) + '] ' + str(' '.join(args))
     print(msg)
-    os.system(msg)
+    #os.system(msg)
 
 def getSerial():
   """ 
@@ -72,8 +72,8 @@ def logError(er, escapeMessage):
     from sys import exit
     exit()
 
-
-
+logger('test', 'test2')
+"""
 ''' Codes '''
 if __name__ == "__main__":
     # Connect to Honeywell HPMA115S0-XXX sensor
@@ -98,4 +98,4 @@ if __name__ == "__main__":
         try:
             df = pd.read_csv(fileName, encoding='utf-8')
         except UnicodeDecodeError:
-            df = pd.read_csv(fileName, encoding='cp949')
+            df = pd.read_csv(fileName, encoding='cp949')"""
