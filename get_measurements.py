@@ -12,7 +12,9 @@ def logger(self, *args):
     """
         All parameters should be on string-type!
     """
-    print('[' + str(datetime.now()) + ']', str(' '.join(args)))
+    msg = '[' + str(datetime.now()) + ']', str(' '.join(args))
+    print(msg)
+    os.system(msg)
 
 def getSerial():
   """ 
