@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
         query = f"""INSERT INTO {mTableName} (stationCode, measuredDatetime, pm10, pm25)
-                    VALUES ({getSerial()}, {str(datetime.now())}, {pm10}, {pm25})"""
+                    VALUES ({getSerial()}, {str(datetime.now())[:-7]}, {pm10}, {pm25})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
