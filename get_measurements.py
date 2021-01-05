@@ -36,7 +36,7 @@ def logError(er, escapeMessage):
     stationCode = getSerial()
     updatedAt = str(datetime.now())
     errors = str(er)
-    errorData = '{stationCode}, {updatedAt}, 2, {errors}'
+    errorData = f'{stationCode}, {updatedAt}, 2, {errors}'
 
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
@@ -56,12 +56,12 @@ def logError(er, escapeMessage):
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
-        query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
+        query = f"""INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
                     VALUES ({stationCode}, {updated_at}, 2, {errors})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
-        errorData = '{stationCode}, {updatedAt}, 2, {e}'
+        errorData = f'{stationCode}, {updatedAt}, 2, {e}'
         with open('error.csv', 'a', encoding='utf8') as f:
             if os.path.isfile('error.csv'):
                 f.write('\n')
@@ -72,26 +72,23 @@ def logError(er, escapeMessage):
     from sys import exit
     exit()
 
-logger('test', 'test2')
-
 ''' Codes '''
 if __name__ == "__main__":
     # Connect to Honeywell HPMA115S0-XXX sensor
     try:
         sensor = hw.Honeywell(port="/dev/serial0", baud=9600)
+        logger('Connection to sensor established successfully')
     except Exception as e:
         msg = ('Sensor communication failed! ERROR: ' + str(e))
         logError(str(e), msg)
-    logger('Connection to sensor established successfully')
 
     # Get datetime & pollution data from the sensor
     try:
         measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
+        logger(f'measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
     except Exception as e:
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
         logError(str(e), msg)
-    logger('measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
-    os.system('echo {measuredTime}, {pm10}, {pm25}')
 
     fileName = 'measurements.csv'
     if os.path.isfile(fileName):
