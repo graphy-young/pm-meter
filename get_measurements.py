@@ -12,9 +12,9 @@ def logger(*args):
     """
         All parameters should be on string-type!
     """
-    msg = '[' + str(datetime.now()) + '] ' + str(' '.join(args))
-    print(msg)
-    #os.system(msg)
+    message = '[' + str(datetime.now()) + '] ' + str(' '.join(args))
+    #os.system(f'echo {message}')
+    print(message)
 
 def getSerial():
   """ 
@@ -28,8 +28,7 @@ def getSerial():
         cpuSerial = line[10:26]
     f.close()
   except:
-    cpuSerial = "ERROR000000000"
-
+    cpuSerial = "UNKNOWN_SERIAL0"
   return cpuSerial
 
 def logError(er, escapeMessage):
@@ -37,7 +36,6 @@ def logError(er, escapeMessage):
     updatedAt = str(datetime.now())
     errors = str(er)
     errorData = f'{stationCode}, {updatedAt}, 2, {errors}'
-
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
                                     user=keys.userName, password=keys.password, 
@@ -57,7 +55,7 @@ def logError(er, escapeMessage):
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
         query = f"""INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
-                    VALUES ({stationCode}, {updated_at}, 2, {errors})"""
+                    VALUES ({stationCode}, {updatedAt}, 2, {errors})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
@@ -80,12 +78,12 @@ if __name__ == "__main__":
         logger('Connection to sensor established successfully')
     except Exception as e:
         msg = ('Sensor communication failed! ERROR: ' + str(e))
-        logError(str(e), msg)
+        logError(e, msg)
 
     # Get datetime & pollution data from the sensor
     try:
-        measuredDateime, pm10, pm25 = str(sensor.read()).split(',')
-        logger(f'measuredDatetime: {measuredDatetime}, PM10: {PM10}, PM2.5: {PM25}')
+        measuredDatetime, pm10, pm25 = str(sensor.read()).split(',')
+        logger(f'measuredDatetime: {measuredDatetime}, PM10: {pm10}, PM25: {pm25}')
     except Exception as e:
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
         logError(str(e), msg)
