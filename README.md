@@ -9,7 +9,7 @@ source for research projects
 * MySQL database server to record measured data
 
 ### External libraries
-* honeywell_hpma115s0
+* honeywell-hpma115s0
 * pymysql
 * pandas
 
