@@ -31,19 +31,21 @@ def getSerial():
     cpuSerial = "UNKNOWN_SERIAL0"
   return cpuSerial
 
-def logError(er, escapeMessage):
+def logError(er, *args):
     stationCode = getSerial()
     updatedAt = str(datetime.now())
     errors = str(er)
     errorData = f'{stationCode}, {updatedAt}, 2, {errors}'
+    escapeMessage = str(' '.join(args))
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
                                     user=keys.userName, password=keys.password, 
                                     database=keys.dbName)
         cursor = connection.cursor()
-        if os.path.isfile('error.csv'):
+        eFileName = 'error.csv'
+        if os.path.isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
-            errorFile = pd.read_csv('error.csv', encoding='utf-8', header=None)
+            errorFile = pd.read_csv(eFileName, encoding='utf-8', header=None)
             errorFile = list(errorFile.to_records(index=False))
             query = """INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
                         VALUES (%s, %s, %s, %s)"""
@@ -60,8 +62,8 @@ def logError(er, escapeMessage):
         connection.commit()
     except Exception as e:
         errorData = f'{stationCode}, {updatedAt}, 2, {e}'
-        with open('error.csv', 'a', encoding='utf8') as f:
-            if os.path.isfile('error.csv'):
+        with open(eFileName, 'a', encoding='utf8') as f:
+            if os.path.isfile(eFileName):
                 f.write('\n')
             f.write(errorData)
     finally:
@@ -70,7 +72,9 @@ def logError(er, escapeMessage):
     from sys import exit
     exit()
 
-''' Codes '''
+
+
+""" Codes """
 if __name__ == "__main__":
     # Connect to Honeywell HPMA115S0-XXX sensor
     try:
@@ -80,6 +84,13 @@ if __name__ == "__main__":
         msg = ('Sensor communication failed! ERROR: ' + str(e))
         logError(e, msg)
 
+    try:
+        os.system('sudo rdate -s time.bora.net')
+        logger('system time sync got successful')
+    except Exception as e:
+        msg = ('time sync got failed! Error: ' + str(e))
+        logError(e, msg)
+
     # Get datetime & pollution data from the sensor
     try:
         measuredDatetime, pm10, pm25 = str(sensor.read()).split(',')
@@ -87,6 +98,35 @@ if __name__ == "__main__":
     except Exception as e:
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
         logError(str(e), msg)
+
+    try:
+        connection = pymysql.connect(host=keys.host, port=keys.port, 
+                                    user=keys.userName, password=keys.password, 
+                                    database=keys.dbName)
+        cursor = connection.cursor()
+        mFileName = 'measurements.csv'
+        mTableName = 'air_quality'
+        if os.path.isfile(mFileName): # Table name 수정
+            logger(f'Found previous {mTableName} that could not be sent properly to DB server. Try again to save those...')
+            measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
+            measurementFile = list(measurementFile.to_records(index=False))
+            query = 'INSERT INTO ' + mTableName + """ (stationCode, measuredDatetime, pm10, pm25) 
+                       VALUES (%s, %s, %s, %s)"""
+            cursor.executemany(query, measurementFile)
+            connection.commit()
+            if int(cursor.rowcount) > 1:
+                messageVerb = 'were'
+            else:
+                messageVerb = 'was'
+            logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
+        query = f"""INSERT INTO {mTableName} (stationCode, measuredDatetime, pm10, pm25)
+                    VALUES ({getSerial()}, {datetime.now(), {pm10}, {pm25}})"""
+        cursor.execute(query)
+        connection.commit()
+    except Exception as e:
+        logError(e, 'Sending measurements failed! ERROR: ' + str(e))
+    finally:
+        connection.close()
 
     fileName = 'measurements.csv'
     if os.path.isfile(fileName):
