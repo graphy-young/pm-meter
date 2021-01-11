@@ -3,3 +3,5 @@ honeywell-hpma115s0==0.0.3
 pymysql>=0.10.1
 pandas>=1.1.5
 numpy>=1.16.5
+2to3>=1.0
+smbus>=1.1
