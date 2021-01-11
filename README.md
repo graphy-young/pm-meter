@@ -8,13 +8,9 @@ Some codes won't be open for security.
   * Raspbian OS or Debian Linux
   * Python 3
 * Honeywell HPMA115S0-XXX
-* MySQL database server to record measured data
-
-### External libraries
-* honeywell-hpma115s0
-* pymysql
-* pandas
+* Geekworm X750 UPS module
+* External MySQL DB server to record measured data
 
 # Memo
-* Need `keys.py` which have database connection information in same directory 
+* `keys.py` Required which have database connection information in same directory 
 * Original Arduino(.ino) file were removed for some hardware changes!
