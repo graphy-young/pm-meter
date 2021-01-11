@@ -9,7 +9,7 @@ Some codes won't be open for security.
   * Raspbian OS
   * Python 3.6 or higher
 * Honeywell HPMA115S0-XXX
-* Geekworm X750 UPS module & compatible rechargable batteries
+* Geekworm X750 UPS module & 18650 cells Lithium Ion batteries * 4
 * External MySQL DB server to record measured data
 
 # Hardware setup
