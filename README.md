@@ -1,5 +1,7 @@
-# rasp-measure
-source for research projects
+# Raspmeasure
+Raspmeasure is a portable measuring device for fine particles. 
+This project is a part of research conducting in ENDS LAB in Kookmin University.
+Some codes won't be open for security.
 
 # Requirements
 * Raspberry Pi 3 or newer (3 model recommended for less voltage use)
