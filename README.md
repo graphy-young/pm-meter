@@ -11,8 +11,13 @@ Some codes won't be open for security.
 * Honeywell HPMA115S0-XXX
 * Geekworm X750 UPS module & 18650 cells Lithium Ion batteries * 4
 * External MySQL DB server to record measured data
+* Wi-Fi Network for portable use
 
 # Hardware setup
+
+
+# Instruction
+
 
 # Memo
 * `keys.py` Required which have database connection information in same directory 
