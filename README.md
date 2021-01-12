@@ -1,18 +1,24 @@
-# rasp-measure
-source for research projects
+# Raspmeasure
+Raspmeasure is a portable measuring device for fine particles.
+Hardware is based on Raspberry Pi, not compatible with Arduino.
+This project is a part of research conducting in ENDS LAB in Kookmin University.
+Some codes won't be open for security.
 
 # Requirements
-* Raspberry Pi 3 or newer (3 model recommended for less voltage use)
-  * Raspbian OS or Debian Linux
-  * Python 3
+* Raspberry Pi 3 or newer (older model is recommended for more uptime)
+  * Raspbian OS
+  * Python 3.6 or higher
 * Honeywell HPMA115S0-XXX
-* MySQL database server to record measured data
+* Geekworm X750 UPS module & 18650 cells Lithium Ion batteries * 4
+* External MySQL DB server to record measured data
+* Wi-Fi Network for portable use
 
-### External libraries
-* honeywell-hpma115s0
-* pymysql
-* pandas
+# Hardware setup
+
+
+# Instruction
+
 
 # Memo
-* Need `keys.py` which have database connection information in same directory 
+* `keys.py` Required which have database connection information in same directory 
 * Original Arduino(.ino) file were removed for some hardware changes!
