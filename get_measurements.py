@@ -107,7 +107,7 @@ if __name__ == "__main__":
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
         if os.path.isfile(mFileName):
-            logger(f'Found previous {mTableName} that could not be sent properly to DB server. Try again to save those...')
+            logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
             measurementFile = list(measurementFile.to_records(index=False))
             query = 'INSERT INTO `' + mTableName + """` (stationCode, measuredDatetime, pm10, pm25) 
