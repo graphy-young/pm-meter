@@ -100,6 +100,31 @@ if __name__ == "__main__":
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
         logError(str(e), msg)
 
+    # Get station code using RPi's CPU seiral code
+    try:
+        connection = pymysql.connect(host=keys.host, port=keys.port, 
+                                    user=keys.userName, password=keys.password, 
+                                    database=keys.dbName)
+        cursor = connection.cursor()
+
+        rpiSerial = getSerial()
+
+        query = f""" 
+                    SELECT station_code
+                    FROM station_info
+                    WHERE serial_code = '{rpiSerial}'
+                """
+        cursor.execute(query)
+
+        stationCode = cursor.fetchone()[0]
+        logger(f'Station code [{stationCode}] Fetched from DB successfully')
+    except Exception as e:
+        msg = f'Searching station code from DB failed! error: {[str(e)]}'
+        logError(e, msg)
+    finally:
+        connection.close()
+        
+
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
                                     user=keys.userName, password=keys.password, 
@@ -125,7 +150,7 @@ if __name__ == "__main__":
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
         query = f"""INSERT INTO {mTableName} ({mColumnList})
-                    VALUES ({getSerial()}, {str(datetime.now())}, {pm10}, {pm25})"""
+                    VALUES ({stationCode}, {str(datetime.now())}, {pm10}, {pm25})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
