@@ -141,7 +141,7 @@ if __name__ == "__main__":
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
             measurementFile = list(measurementFile.to_records(index=False))
             query = 'INSERT INTO `' + mTableName + f"""` ({mColumnList})
-                       VALUES (%s, %s, %s, %s)"""
+                       VALUES (%s, %s, %s, %s);"""
             cursor.executemany(query, measurementFile)
             connection.commit()
             if int(cursor.rowcount) > 1:
@@ -149,8 +149,9 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
+
         query = f"""INSERT INTO {mTableName} ({mColumnList})
-                    VALUE ({getStationCode()}, {datetime.now()}, {pm10}, {pm25})"""
+                    VALUES ({getStationCode()}, {str(datetime.now())}, {pm10}, {pm25});"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
