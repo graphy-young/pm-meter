@@ -33,9 +33,9 @@ def getSerial():
 
 def logError(er, *args):
     stationCode = getSerial()
-    updatedAt = str(datetime.now())[:-7]
+    updatedTime = str(datetime.now())
     errors = str(er)
-    errorData = f'{stationCode}, {updatedAt}, 2, {errors}'
+    errorData = f'{stationCode}, {updatedTime}, 2, {errors}'
     escapeMessage = str(' '.join(args))
     try:
         connection = pymysql.connect(host=keys.host, port=keys.port, 
@@ -56,12 +56,12 @@ def logError(er, *args):
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
-        query = f"""INSERT INTO device_log (stationCode, updated_at, file_descriptor, command) 
-                    VALUES ({stationCode}, {updatedAt}, 2, {errors})"""
+        query = f"""INSERT INTO device_log (station_code, updated_time, file_descriptor, command) 
+                    VALUES ({stationCode}, {updatedTime}, 2, {errors})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
-        errorData = f'{stationCode}, {updatedAt}, 2, {e}'
+        errorData = f'{stationCode}, {updatedTime}, 2, {e}'
         with open(eFileName, 'a', encoding='utf8') as f:
             if os.path.isfile(eFileName):
                 f.write('\n')
@@ -84,6 +84,7 @@ if __name__ == "__main__":
         msg = ('Sensor communication failed! ERROR: ' + str(e))
         logError(e, msg)
 
+    # Sync device's time via remote time server
     try:
         os.system('sudo rdate -s time.bora.net')
         logger('System time sync got successful')
@@ -104,13 +105,17 @@ if __name__ == "__main__":
                                     user=keys.userName, password=keys.password, 
                                     database=keys.dbName)
         cursor = connection.cursor()
+
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
+        mColumnList = ('station_code', 'measured_time', 'pm10', 'pm25')
+        mColumnList = ', '.join(mColumnList)
+
         if os.path.isfile(mFileName):
             logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
             measurementFile = list(measurementFile.to_records(index=False))
-            query = 'INSERT INTO `' + mTableName + """` (stationCode, measuredDatetime, pm10, pm25) 
+            query = 'INSERT INTO `' + mTableName + f"""` ({mColumnList})
                        VALUES (%s, %s, %s, %s)"""
             cursor.executemany(query, measurementFile)
             connection.commit()
@@ -119,18 +124,11 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
-        query = f"""INSERT INTO {mTableName} (stationCode, measuredDatetime, pm10, pm25)
-                    VALUES ({getSerial()}, {str(datetime.now())[:-7]}, {pm10}, {pm25})"""
+        query = f"""INSERT INTO {mTableName} ({mColumnList})
+                    VALUES ({getSerial()}, {str(datetime.now())}, {pm10}, {pm25})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
         logError(e, 'Sending measurements failed! ERROR: ' + str(e))
     finally:
         connection.close()
-
-    fileName = 'measurements.csv'
-    if os.path.isfile(fileName):
-        try:
-            df = pd.read_csv(fileName, encoding='utf-8')
-        except UnicodeDecodeError:
-            df = pd.read_csv(fileName, encoding='cp949')
