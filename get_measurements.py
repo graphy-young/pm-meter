@@ -150,8 +150,10 @@ if __name__ == "__main__":
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
 
-        query = f"""INSERT INTO {mTableName} ({mColumnList})
-                    VALUES ({getStationCode()}, {str(datetime.now())}, {pm10}, {pm25});"""
+        query = f"""
+                    INSERT INTO {mTableName} ({mColumnList})
+                    VALUES ('{getStationCode()}', {str(datetime.now())}, {pm10}, {pm25});
+                """
         cursor.execute(query)
         connection.commit()
     except Exception as e:
