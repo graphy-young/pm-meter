@@ -23,15 +23,17 @@ def getSerial():
   cpuSerial = "0000000000000000" # 16 bytes
 
   try:
-    f = open('/proc/cpuinfo','r')
+    f = open('/proc/cpuinfo','r') # Read Raspberry Pi's hardware info
 
     for line in f:
       if line[0:6]=='Serial': 
           cpuSerial = line[10:26]
     f.close()
 
-  except:
-    cpuSerial = "UNKNOWN_SERIAL0"
+  except Exception as e:
+    msg = f"Getting Serial code from RPi failed! ERROR: : {[str(e)]}"
+    logError(e, msg)
+    #cpuSerial = "UNKNOWN_SERIAL0"
 
   return cpuSerial
 
@@ -57,7 +59,7 @@ def getStationCode():
         logger(f"Station code '{stationCode}' Fetched from DB successfully")
 
     except Exception as e:
-        msg = f'Searching station code from DB failed! error: {[str(e)]}'
+        msg = f'Searching station code from DB failed! ERROR: {[str(e)]}'
         logError(e, msg)
 
     finally:
@@ -171,8 +173,11 @@ if __name__ == "__main__":
 
         if os.path.isfile(mFileName):
             logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
-            measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None)
-            measurementFile = list(measurementFile.to_records(index=False))
+            measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None, dtype='str')
+            measurementFile = list(measurementFile.values.tolist())
+            for row in measurementFile:
+                row[2] = str(row[2])
+                row[3] = str(row[3])
             query = 'INSERT INTO `' + mTableName + f"""` ({mColumnList})
                        VALUES (%s, %s, %s, %s);"""
             cursor.executemany(query, measurementFile)
@@ -182,17 +187,28 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
+            os.system('rm -rf measurements.csv')
+            logger('measurements.csv deleted. Continue to next step!')
 
         query = f"""
                     INSERT INTO {mTableName} ({mColumnList})
-                    VALUES ('{getStationCode()}', '{str(datetime.now())}'', {pm10}, {pm25});
+                    VALUES ('{getStationCode()}', '{str(datetime.now())}', {pm10}, {pm25});
                 """
         cursor.execute(query)
         connection.commit()
-        logger('Sending measurement process ended successfuly!')
+        logger(f"'{getStationCode()}', {measuredDatetime}, {pm10}, {pm25} inserted.")
+
 
     except Exception as e:
+        # Save measurement to local drive when error occurs
+        with open(mFileName, 'a', encoding='utf-8') as f:
+            if os.path.isfile(mFileName):
+                f.write('\n')
+            row = [getStationCode(), str(datetime.now()), pm10, pm25]
+            row = ','.join(row)
+            f.write(row)
         logError(e, 'Sending measurements failed! ERROR: ' + str(e))
 
     finally:
         connection.close()
+        logger('Sending measurements process ended successfuly! Connection closed.')
