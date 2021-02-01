@@ -12,7 +12,7 @@ def logger(*args):
     """
         All parameters should be on string-type!
     """
-    message = '[' + str(datetime.now()) + '] ' + str(' '.join(args))
+    message = '[ ' + __file__ + ' ' + str(datetime.now()) + '] ' + str(' '.join(args))
     #os.system(f'echo {message}')
     print(message)
 

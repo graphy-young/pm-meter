@@ -18,7 +18,6 @@ signalLevel = re.search('Signal level=-+\d+ dBm', wirelessInfo[5]).group(0)[13:-
 #remainingData = # 전송 안된 데이터 개수 읽기
 #deviceTemperature = # RTC 모듈 온도센서에서 온도 읽기
 deviceTime = str(datetime.now())
-### db 모델 변경하기
 
 if __name__ == "__main__":
     try:
@@ -49,3 +48,4 @@ if __name__ == "__main__":
         logError(e, 'Sending status failed! ERROR: ' + str(e))
     finally:
         connection.close()
+        logger('Connection closed. Quit this module..')
