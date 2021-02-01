@@ -17,7 +17,15 @@ Some codes won't be open for security.
 
 
 # Instruction
+* Make `keys.py` to conenct MySQL DB server. file should be like below
+```
+host = 'hostaddress.com'
+port = 1000
+userName = 'userName'
+password = 'password'
+dbName = 'dbName'
 
+```
 
 # Memo
 * `keys.py` Required which have database connection information in same directory 
