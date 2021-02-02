@@ -1,9 +1,10 @@
 ''' Module import '''
 import honeywell_hpma115s0 as hw
-import os, sys, datetime
 import pymysql
 import keys
 import pandas as pd
+from os import system
+from os.path import isfile
 from datetime import datetime
 
 
@@ -13,7 +14,7 @@ def logger(*args):
         All parameters should be on string-type!
     """
     message = '[ ' + __file__ + ' ' + str(datetime.now()) + '] ' + str(' '.join(args))
-    #os.system(f'echo {message}')
+    #system(f'echo {message}')
     print(message)
 
 def getSerial():
@@ -36,6 +37,13 @@ def getSerial():
     #cpuSerial = "UNKNOWN_SERIAL0"
 
   return cpuSerial
+
+def connectDB():
+    connection = pymysql.connect(host=keys.host, port=keys.port, 
+                                user=keys.userName, password=keys.password, 
+                                database=keys.dbName)
+    cursor = connection.cursor()
+    return connection, cursor
 
 def getStationCode():
     """
@@ -86,7 +94,7 @@ def logError(er, *args):
         eColumnList = ['station_code', 'executed_time', 'file_descriptor', 'command']
         eColumnList = ', '.join(eColumnList)
 
-        if os.path.isfile(eFileName):
+        if isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
 
             errorFile = pd.read_csv(eFileName, encoding='utf-8', header=None)
@@ -115,7 +123,7 @@ def logError(er, *args):
         errorData = f'{stationCode}, {updatedTime}, 2, {e}'
 
         with open(eFileName, 'a', encoding='utf8') as f:
-            if os.path.isfile(eFileName):
+            if isfile(eFileName):
                 f.write('\n')
             f.write(errorData)
 
@@ -142,7 +150,7 @@ if __name__ == "__main__":
 
     # Sync device's time via remote time server
     try:
-        os.system('sudo rdate -s time.bora.net')
+        system('sudo rdate -s time.bora.net')
         logger('System time sync got successful')
 
     except Exception as e:
@@ -161,17 +169,14 @@ if __name__ == "__main__":
 
 
     try:
-        connection = pymysql.connect(host=keys.host, port=keys.port, 
-                                    user=keys.userName, password=keys.password, 
-                                    database=keys.dbName)
-        cursor = connection.cursor()
+        connection, cursor = connectDB()
 
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
         mColumnList = ('station_code', 'measured_time', 'pm10', 'pm25')
         mColumnList = ', '.join(mColumnList)
 
-        if os.path.isfile(mFileName):
+        if isfile(mFileName):
             logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
             measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None, dtype='str')
             measurementFile = list(measurementFile.values.tolist())
@@ -187,7 +192,7 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
-            os.system('rm -rf measurements.csv')
+            system('rm -rf measurements.csv')
             logger('measurements.csv deleted. Continue to next step!')
 
         query = f"""
@@ -202,7 +207,7 @@ if __name__ == "__main__":
     except Exception as e:
         # Save measurement to local drive when error occurs
         with open(mFileName, 'a', encoding='utf-8') as f:
-            if os.path.isfile(mFileName):
+            if isfile(mFileName):
                 f.write('\n')
             row = [getStationCode(), str(datetime.now()), pm10, pm25]
             row = ','.join(row)

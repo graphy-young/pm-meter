@@ -1,11 +1,12 @@
 import x750ups
-from get_measurements import logger, logError, getSerial
-from datetime import datetime
-from os import popen
-from os.path import isfile
+import keys
 import re
 import pymysql
 import pandas as pd
+from get_measurements import logger, logError, getSerial, connectDB
+from datetime import datetime
+from os import popen
+from os.path import isfile
 
 stationCode = getSerial()
 updated_at = str(datetime.now())
@@ -21,12 +22,13 @@ deviceTime = str(datetime.now())
 
 if __name__ == "__main__":
     try:
-        connection = pymysql.connect(host=keys.host, port=keys.port, 
-                    user=keys.userName, password=keys.password, 
-                    database=keys.dbName)
-        cursor = connection.cursor()
+        connection, cursor = connectDB()
+
         sFileName = 'status.csv'
         sTableName = 'device_status'
+        sColumnList = ('station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature')
+        sColumnList = ', '.join(sColumnList)
+
         if isfile(sFileName):
             logger('Found previous status that could not be stored to DB server. Try again to save those...')
             statusFile = pd.read_csv(sFileName, encoding='utf-8', header=None)
