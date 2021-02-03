@@ -17,7 +17,10 @@ Some codes won't be open for security.
 
 
 # Instruction
-* Make `keys.py` to conenct MySQL DB server. file should be like below
+* Enable Raspberry Pi's SSH connection in `raspi-config` or making `/boot/ssh` if your environment is headless.
+* install MySQL Server (higher version recommended) & MySQL Workbench on your external database server
+* Using `database/raspmeasure_model.mwb`, excecute forward engineering via MySQL Workbench
+* Create `keys.py` to conenct MySQL DB server. file should be like below
 ```
 host = 'hostaddress.com'
 port = 1000
@@ -25,6 +28,8 @@ userName = 'userName'
 password = 'password'
 dbName = 'dbName'
 ```
+  * `root` account is not recommended as it can make security threats
+* Excecute `init.sh` on your RPi
 
 # Memo
 * `keys.py` Required which have database connection information in same directory 
