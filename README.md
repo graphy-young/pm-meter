@@ -6,7 +6,7 @@ Some codes won't be open for security.
 
 # Requirements
 * Raspberry Pi 3 or newer (older model is recommended for more uptime)
-  * Raspbian OS
+  * Raspberry Pi OS (former Raspbian Stretch)
   * Python 3.6 or higher
 * Honeywell HPMA115S0-XXX
 * Geekworm X750 UPS module & 18650 cells Lithium Ion batteries * 4
@@ -24,7 +24,6 @@ port = 1000
 userName = 'userName'
 password = 'password'
 dbName = 'dbName'
-
 ```
 
 # Memo
