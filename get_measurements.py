@@ -13,7 +13,7 @@ def logger(*args):
     """
         All parameters should be on string-type!
     """
-    message = '[ ' + __file__ + ' ' + str(datetime.now()) + '] ' + str(' '.join(args))
+    message = f'[{__file__}] {str(datetime.now())}] {str(' '.join(args))}'
     #system(f'echo {message}')
     print(message)
 
@@ -38,12 +38,32 @@ def getSerial():
 
   return cpuSerial
 
+def syncTime():
+    """ 
+        Sync device's time via remote time server
+    """
+    try:
+        system('sudo rdate -s time.bora.net')
+        logger('System time sync got successful')
+
+    except Exception as e:
+        msg = (f'time sync got failed! ERROR: {str(e)}')
+        logError(e, msg)
+
 def connectDB():
-    connection = pymysql.connect(host=keys.host, port=keys.port, 
-                                user=keys.userName, password=keys.password, 
-                                database=keys.dbName)
-    cursor = connection.cursor()
-    return connection, cursor
+    """
+       Connect to MySQL database server, returning connection & cursor objects. 
+    """
+    try:
+        connection = pymysql.connect(host=keys.host, port=keys.port, 
+                                    user=keys.userName, password=keys.password, 
+                                    database=keys.dbName)
+        cursor = connection.cursor()
+        logger('DB connection Established.')
+        return connection, cursor
+    except Exception as e:
+        msg = (f'DB connection failed! ERROR: {str(e)}')
+        logError(e, msg)
 
 def getStationCode():
     """
@@ -96,8 +116,9 @@ def logError(er, *args):
 
         if isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
-
-            errorFile = pd.read_csv(eFileName, encoding='utf-8', header=None)
+            errorFile = pd.read_csv(eFileName, encoding='utf-8', names=eColumnList.split(','))
+            errorFile = errorFile.astype({'station_code': 'str'})
+            errorFile['station_code'] = errorFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
             errorFile = list(errorFile.to_records(index=False))
 
             query = f"""
@@ -147,16 +168,7 @@ if __name__ == "__main__":
         msg = ('Sensor communication failed! ERROR: ' + str(e))
         logError(e, msg)
 
-
-    # Sync device's time via remote time server
-    try:
-        system('sudo rdate -s time.bora.net')
-        logger('System time sync got successful')
-
-    except Exception as e:
-        msg = ('time sync got failed! Error: ' + str(e))
-        logError(e, msg)
-
+    syncTime()
 
     # Get datetime & pollution data from the sensor
     try:
@@ -173,18 +185,17 @@ if __name__ == "__main__":
 
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
-        mColumnList = ('station_code', 'measured_time', 'pm10', 'pm25')
+        mColumnList = ['station_code', 'measured_time', 'pm10', 'pm25']
         mColumnList = ', '.join(mColumnList)
 
         if isfile(mFileName):
             logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
-            measurementFile = pd.read_csv(mFileName, encoding='utf-8', header=None, dtype='str')
+            measurementFile = pd.read_csv(mFileName, encoding='utf-8', names=mColumnList.split(','))
+            measurementFile = measurementFile.astype({'station_code': 'str'})
+            measurementFile['station_code'] = measurementFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
             measurementFile = list(measurementFile.values.tolist())
-            for row in measurementFile:
-                row[2] = str(row[2])
-                row[3] = str(row[3])
-            query = 'INSERT INTO `' + mTableName + f"""` ({mColumnList})
-                       VALUES (%s, %s, %s, %s);"""
+
+            query = f'INSERT INTO `{mTableName}` ({mColumnList}) ' + 'VALUES (%s, %s, %s, %s);'
             cursor.executemany(query, measurementFile)
             connection.commit()
             if int(cursor.rowcount) > 1:
