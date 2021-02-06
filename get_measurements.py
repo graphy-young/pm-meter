@@ -11,15 +11,20 @@ from datetime import datetime
 ''' function definition  '''
 def logger(*args):
     """
-        All parameters should be on string-type!
+        Print log message with excecuting file name, timestamp.
+        *** All parameters should be on string-type!
     """
-    message = f'[{__file__}] {str(datetime.now())}] {str(' '.join(args))}'
-    #system(f'echo {message}')
+    message = f"[{__file__} {str(datetime.now())}] {str(' '.join(args))}"
     print(message)
+
+######### 나중에 추가하기
+def dbLogger(*args):
+    connectDB()
 
 def getSerial():
   """ 
-    Extract serial from cpuinfo file
+    Extract serial from /proc/cpuinfo file what RPi OS having in itself
+    This works only Rasberry Pi OS(former named Raspbian)
   """
   cpuSerial = "0000000000000000" # 16 bytes
 
@@ -97,59 +102,55 @@ def getStationCode():
 
 def logError(er, *args):
     
-    stationCode = getStationCode()
-    updatedTime = str(datetime.now())
+    station_code = getStationCode()
+    execution_time = str(datetime.now())
     errors = str(er)
-    errorData = f'{stationCode}, {updatedTime}, 2, {errors}'
     escapeMessage = str(' '.join(args))
 
     try:
-        connection = pymysql.connect(host=keys.host, port=keys.port, 
-                                    user=keys.userName, password=keys.password, 
-                                    database=keys.dbName)
-        cursor = connection.cursor()
+        connection, cursor = connectDB()
 
         eFileName = 'error.csv'
         eTableName = 'command_log'
-        eColumnList = ['station_code', 'executed_time', 'file_descriptor', 'command']
-        eColumnList = ', '.join(eColumnList)
+        eColumnList = ['station_code', 'execution_time', 'file_descriptor', 'command']
 
         if isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
-            errorFile = pd.read_csv(eFileName, encoding='utf-8', names=eColumnList.split(','))
+            errorFile = pd.read_csv(eFileName, encoding='utf-8', names=eColumnList)
             errorFile = errorFile.astype({'station_code': 'str'})
+            # When pandas reads csv without any dtype parameter, it reads station code under 10 as integer 0, not '00'.
             errorFile['station_code'] = errorFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
-            errorFile = list(errorFile.to_records(index=False))
+            errorFile = list(errorFile.values.tolist())
 
-            query = f"""
-                        INSERT INTO {eTableName} ({eColumnList}) 
-                        VALUES (%s, %s, %s, %s);
-                    """
+            query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES (%s, %s, %s, %s);"
             cursor.executemany(query, errorFile)
             connection.commit()
-
             if int(cursor.rowcount) > 1:
                 messageVerb = 'were'
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
+            system(f'rm -rf {eFileName}')
+            logger('error.csv deleted.')
         query = f"""
-                    INSERT INTO device_log (station_code, updated_time, file_descriptor, command) 
-                    VALUES ({stationCode}, {updatedTime}, 2, {errors})
+                    INSERT INTO device_log ({', '.join(eColumnList)}])
+                    VALUES ({station_code}, {execution_time}, 2, {errors})
                 """
         cursor.execute(query)
         connection.commit()
+        logger(f"Error data '{station_code}', {execution_time}, 2, {errors} insertion success.")
 
     except Exception as e:
-        errorData = f'{stationCode}, {updatedTime}, 2, {e}'
-
+        logger(f'Error logging process failed due to ERROR: {str(e)}')
         with open(eFileName, 'a', encoding='utf8') as f:
             if isfile(eFileName):
                 f.write('\n')
-            f.write(errorData)
+            f.write(f'{station_code},{execution_time},2,{errors}')
+        logger(f"Error data '{station_code}', {execution_time}, 2, {errors} saved locally in {eFileName}")
 
     finally:
         connection.close()
+        logger('Connection closed. Sending error process ended.')
 
     logger(escapeMessage)
     from sys import exit
@@ -172,8 +173,8 @@ if __name__ == "__main__":
 
     # Get datetime & pollution data from the sensor
     try:
-        measuredDatetime, pm10, pm25 = str(sensor.read()).split(',')
-        logger(f'[DATA] measuredDatetime: {measuredDatetime}, PM10: {pm10}, PM25: {pm25}')
+        measured_time, pm10, pm25 = str(sensor.read()).split(',')
+        logger(f'[DATA] measured_time: {measured_time}, PM10: {pm10}, PM25: {pm25}')
 
     except Exception as e:
         msg = 'Getting data from sensor failed. ERROR:' + str(e)
@@ -186,16 +187,15 @@ if __name__ == "__main__":
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
         mColumnList = ['station_code', 'measured_time', 'pm10', 'pm25']
-        mColumnList = ', '.join(mColumnList)
 
         if isfile(mFileName):
             logger(f'Found previous measurements that could not be sent properly to DB server. Try again to save those...')
-            measurementFile = pd.read_csv(mFileName, encoding='utf-8', names=mColumnList.split(','))
+            measurementFile = pd.read_csv(mFileName, encoding='utf-8', names=mColumnList)
             measurementFile = measurementFile.astype({'station_code': 'str'})
             measurementFile['station_code'] = measurementFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
             measurementFile = list(measurementFile.values.tolist())
-
-            query = f'INSERT INTO `{mTableName}` ({mColumnList}) ' + 'VALUES (%s, %s, %s, %s);'
+            ########## Error 내용에 따른 SQL 삽입 에러 문제 발생 수정하기
+            query = f"INSERT INTO `{mTableName}` ({', '.join(mColumnList)}) VALUES (%s, %s, %s, %s);"
             cursor.executemany(query, measurementFile)
             connection.commit()
             if int(cursor.rowcount) > 1:
@@ -203,8 +203,8 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
-            system('rm -rf measurements.csv')
-            logger('measurements.csv deleted. Continue to next step!')
+            system(f'rm -rf {mFileName}')
+            logger(f'{mFileName} deleted. Continue to next step!')
 
         query = f"""
                     INSERT INTO {mTableName} ({mColumnList})
@@ -212,18 +212,16 @@ if __name__ == "__main__":
                 """
         cursor.execute(query)
         connection.commit()
-        logger(f"'{getStationCode()}', {measuredDatetime}, {pm10}, {pm25} inserted.")
+        logger(f"'{getStationCode()}', {measured_time}, {pm10}, {pm25} inserted.")
 
 
     except Exception as e:
+        logError(e, 'Sending measurements failed! ERROR: ' + str(e))
         # Save measurement to local drive when error occurs
         with open(mFileName, 'a', encoding='utf-8') as f:
             if isfile(mFileName):
                 f.write('\n')
-            row = [getStationCode(), str(datetime.now()), pm10, pm25]
-            row = ','.join(row)
-            f.write(row)
-        logError(e, 'Sending measurements failed! ERROR: ' + str(e))
+            f.write(','.join([getStationCode(), str(datetime.now()), pm10, pm25]))
 
     finally:
         connection.close()

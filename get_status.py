@@ -3,9 +3,9 @@ import keys
 import re
 import pymysql
 import pandas as pd
-from get_measurements import logger, logError, getSerial, connectDB
+from get_measurements import logger, logError, getSerial, connectDB, syncTime
 from datetime import datetime
-from os import popen
+from os import popen, system
 from os.path import isfile
 
 stationCode = getSerial()
@@ -21,20 +21,30 @@ signalLevel = re.search('Signal level=-+\d+ dBm', wirelessInfo[5]).group(0)[13:-
 deviceTime = str(datetime.now())
 
 if __name__ == "__main__":
+    
+    syncTime()
+
     try:
         connection, cursor = connectDB()
 
         sFileName = 'status.csv'
         sTableName = 'device_status'
-        sColumnList = ('station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature')
+        sColumnList = ['station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 
+                        'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature']
         sColumnList = ', '.join(sColumnList)
 
         if isfile(sFileName):
             logger('Found previous status that could not be stored to DB server. Try again to save those...')
-            statusFile = pd.read_csv(sFileName, encoding='utf-8', header=None)
+            statusFile = pd.read_csv(sFileName, encoding='utf-8', header=None, dtype='str')
             statusFile = list(statusFile.to_records(index=False))
-            query = 'INSERT INTO `' + sTableName + """` (stationCode, updated_at, batteryVoltage, batteryCapacity, ssid, linkQuality, signalLevel, remainingData, deviceTemperature, deviceTime) 
-                       VALUES (%s, %s, %s, %s)"""
+            # Convert data to int after reading in str due to stationCode that cosists of two digits less than 10
+            for row in statusFile: 
+                for i in range(2, 10):
+                    if i == 4:
+                        continue
+                    else:
+                        row[i] = int(row[i])
+            query = f'INSERT INTO `{sTableName}` ({sColumnList}) ' + 'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
             cursor.executemany(query, statusFile)
             connection.commit()
             if int(cursor.rowcount) > 1:
