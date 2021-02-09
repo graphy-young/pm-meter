@@ -82,11 +82,7 @@ def getStationCode():
 
         rpiSerial = getSerial()
 
-        query = f""" 
-                    SELECT station_code
-                    FROM station_info
-                    WHERE serial_code = '{rpiSerial}'
-                """
+        query = f"SELECT station_code FROM station_info WHERE serial_code = '{rpiSerial}';"
         cursor.execute(query)
         stationCode = cursor.fetchone()[0]
         logger(f"Station code '{stationCode}' Fetched from DB successfully")
@@ -99,6 +95,13 @@ def getStationCode():
         connection.close()
 
     return stationCode
+
+"""def convertEscape(targetText):
+    escapeDict = {"'": "\'", '"': '\"', "\": '''\\''', 
+                    "%": "\%", "_": '\_'}
+    transTable = targetText.maketrans(escapeDict)
+    translatedText = targetText.translate(transTable)
+    return translatedText"""
 
 def logError(er, *args):
     
@@ -116,12 +119,13 @@ def logError(er, *args):
 
         if isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
-            errorFile = pd.read_csv(eFileName, encoding='utf-8', names=eColumnList)
+            errorFile = pd.read_csv(eFileName, encoding='utf-8', names=eColumnList, delimiter="\t")
             errorFile = errorFile.astype({'station_code': 'str'})
             # When pandas reads csv without any dtype parameter, it reads station code under 10 as integer 0, not '00'.
             errorFile['station_code'] = errorFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
             errorFile = list(errorFile.values.tolist())
-
+            for row in errorFile:
+                row[3] = connection.escape_string(row[3])
             query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES (%s, %s, %s, %s);"
             cursor.executemany(query, errorFile)
             connection.commit()
@@ -132,10 +136,8 @@ def logError(er, *args):
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
             system(f'rm -rf {eFileName}')
             logger('error.csv deleted.')
-        query = f"""
-                    INSERT INTO device_log ({', '.join(eColumnList)}])
-                    VALUES ({station_code}, {execution_time}, 2, {errors})
-                """
+        query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES ('{station_code}', '{execution_time}', 2, '{connection.escape_string(errors)}');"
+                
         cursor.execute(query)
         connection.commit()
         logger(f"Error data '{station_code}', {execution_time}, 2, {errors} insertion success.")
@@ -145,7 +147,7 @@ def logError(er, *args):
         with open(eFileName, 'a', encoding='utf8') as f:
             if isfile(eFileName):
                 f.write('\n')
-            f.write(f'{station_code},{execution_time},2,{errors}')
+            f.write(f'{station_code}\t{execution_time}\t2\t{errors}')
         logger(f"Error data '{station_code}', {execution_time}, 2, {errors} saved locally in {eFileName}")
 
     finally:
@@ -184,6 +186,8 @@ if __name__ == "__main__":
     try:
         connection, cursor = connectDB()
 
+        station_code = getStationCode()
+
         mFileName = 'measurements.csv'
         mTableName = 'air_quality'
         mColumnList = ['station_code', 'measured_time', 'pm10', 'pm25']
@@ -194,7 +198,6 @@ if __name__ == "__main__":
             measurementFile = measurementFile.astype({'station_code': 'str'})
             measurementFile['station_code'] = measurementFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
             measurementFile = list(measurementFile.values.tolist())
-            ########## Error 내용에 따른 SQL 삽입 에러 문제 발생 수정하기
             query = f"INSERT INTO `{mTableName}` ({', '.join(mColumnList)}) VALUES (%s, %s, %s, %s);"
             cursor.executemany(query, measurementFile)
             connection.commit()
@@ -206,13 +209,10 @@ if __name__ == "__main__":
             system(f'rm -rf {mFileName}')
             logger(f'{mFileName} deleted. Continue to next step!')
 
-        query = f"""
-                    INSERT INTO {mTableName} ({mColumnList})
-                    VALUES ('{getStationCode()}', '{str(datetime.now())}', {pm10}, {pm25});
-                """
+        query = f"INSERT INTO {mTableName} ({', '.join(mColumnList)}) VALUES ('{station_code}', '{measured_time}', {pm10}, {pm25});"
         cursor.execute(query)
         connection.commit()
-        logger(f"'{getStationCode()}', {measured_time}, {pm10}, {pm25} inserted.")
+        logger(f"'{station_code}', {measured_time}, {pm10}, {pm25} inserted.")
 
 
     except Exception as e:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
         with open(mFileName, 'a', encoding='utf-8') as f:
             if isfile(mFileName):
                 f.write('\n')
-            f.write(','.join([getStationCode(), str(datetime.now()), pm10, pm25]))
+            f.write(','.join([station_code, measured_time, pm10, pm25]))
 
     finally:
         connection.close()
