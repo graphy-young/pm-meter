@@ -5,10 +5,11 @@ import pymysql
 import pandas as pd
 from get_measurements import logger, logError, getSerial, connectDB, syncTime
 from datetime import datetime
-from os import popen, system
+from os import popen, getresuid, getlogin
 from os.path import isfile
 
 stationCode = getSerial()
+userAccount = getlogin()
 updated_at = str(datetime.now())
 batteryVoltage = x750ups.readVoltage(x750ups.bus)
 batteryCapacity = x750ups.readCapacity(x750ups.bus)
@@ -31,19 +32,14 @@ if __name__ == "__main__":
         sTableName = 'device_status'
         sColumnList = ['station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 
                         'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature']
-        sColumnList = ', '.join(sColumnList)
+        #sColumnList = ', '.join(sColumnList)
 
         if isfile(sFileName):
             logger('Found previous status that could not be stored to DB server. Try again to save those...')
-            statusFile = pd.read_csv(sFileName, encoding='utf-8', header=None, dtype='str')
-            statusFile = list(statusFile.to_records(index=False))
-            # Convert data to int after reading in str due to stationCode that cosists of two digits less than 10
-            for row in statusFile: 
-                for i in range(2, 10):
-                    if i == 4:
-                        continue
-                    else:
-                        row[i] = int(row[i])
+            statusFile = pd.read_csv(sFileName, encoding='utf-8', names=sColumnList)
+            statusFile = statusFile.astype({'station_code': 'str'})
+            statusFile['station_code'] = statusFile['station_code'].apply(lambda x: '0'+str(x) if int(x) < 10 else x)
+            statusFile = list(statusFile.values.tolist())
             query = f'INSERT INTO `{sTableName}` ({sColumnList}) ' + 'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
             cursor.executemany(query, statusFile)
             connection.commit()
@@ -52,8 +48,8 @@ if __name__ == "__main__":
             else:
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'status file', messageVerb, 'inserted.')
-        query = f"""INSERT INTO {sTableName} (stationCode, updated_at, batteryVoltage, batteryCapacity, ssid, linkQuality, signalLevel, remainingData, deviceTemperature, deviceTime)
-                    VALUES ({stationCode}, {updated_at}, {batteryVoltage}, {batteryCapacity}, {ssid}, {linkQuality}, {signalLevel}, {remainingData}, {deviceTemperature}, {deviceTime})"""
+        query = f"""INSERT INTO {sTableName} ({', '.join(mColumnList)})
+                    VALUES ('{stationCode}', {updated_at}, {batteryVoltage}, {batteryCapacity}, '{ssid}', {linkQuality}, {signalLevel}, {remainingData}, {deviceTemperature}, {deviceTime})"""
         cursor.execute(query)
         connection.commit()
     except Exception as e:
