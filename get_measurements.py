@@ -1,11 +1,11 @@
 ''' Module import '''
-import honeywell_hpma115s0 as hw
-import pymysql
-import keys
-import pandas as pd
-from os import system
-from os.path import isfile
-from datetime import datetime
+import honeywell_hpma115s0 as hw # for connecting pm sensor
+import pymysql # to CRUD data with database
+import keys # including database connection info
+import pandas as pd # to read local-stored data
+from os import system, getresuid, getlogin # to execute linux command
+from os.path import isfile, abspath # check whether local file exists
+from datetime import datetime # to load measured & executed time
 
 
 ''' function definition  '''
@@ -21,34 +21,13 @@ def logger(*args):
 def dbLogger(*args):
     connectDB()
 
-def getSerial():
-  """ 
-    Extract serial from /proc/cpuinfo file what RPi OS having in itself
-    This works only Rasberry Pi OS(former named Raspbian)
-  """
-  cpuSerial = "0000000000000000" # 16 bytes
-
-  try:
-    f = open('/proc/cpuinfo','r') # Read Raspberry Pi's hardware info
-
-    for line in f:
-      if line[0:6]=='Serial': 
-          cpuSerial = line[10:26]
-    f.close()
-
-  except Exception as e:
-    msg = f"Getting Serial code from RPi failed! ERROR: : {[str(e)]}"
-    logError(e, msg)
-    #cpuSerial = "UNKNOWN_SERIAL0"
-
-  return cpuSerial
-
 def syncTime():
     """ 
         Sync device's time via remote time server
     """
     try:
-        system('sudo rdate -s time.bora.net')
+        # Load real time from external server. if there's no network connection, it occurs errors
+        system('sudo rdate -s time.bora.net') 
         logger('System time sync got successful')
 
     except Exception as e:
@@ -69,6 +48,25 @@ def connectDB():
     except Exception as e:
         msg = (f'DB connection failed! ERROR: {str(e)}')
         logError(e, msg)
+
+def getSerial():
+  """ 
+    Extract serial from /proc/cpuinfo file what RPi OS having in itself
+    This works only Rasberry Pi OS(former named Raspbian)
+  """
+  cpuSerial = "0000000000000000" # 16 bytes
+
+  try:
+    with open('/proc/cpuinfo', 'r') as f: # Read Raspberry Pi's hardware info file
+        for line in f:
+            if line[0:6]=='Serial': # Find the line starting with "Serial" to search RPi's serial number
+                cpuSerial = line[10:26]
+
+  except Exception as e:
+    msg = f"Getting Serial code from RPi failed! ERROR: : {[str(e)]}"
+    logError(e, msg)
+    #cpuSerial = "UNKNOWN_SERIAL0"
+  return cpuSerial
 
 def getStationCode():
     """
@@ -96,26 +94,21 @@ def getStationCode():
 
     return stationCode
 
-"""def convertEscape(targetText):
-    escapeDict = {"'": "\'", '"': '\"', "\": '''\\''', 
-                    "%": "\%", "_": '\_'}
-    transTable = targetText.maketrans(escapeDict)
-    translatedText = targetText.translate(transTable)
-    return translatedText"""
-
 def logError(er, *args):
     
     station_code = getStationCode()
     execution_time = str(datetime.now())
+    user_account = getlogin()
+    uid = str(getresuid()[0]) # originally returns tuple (ruid, euid, suid)
+    executed_file = abspath(__file__)
     errors = str(er)
     escapeMessage = str(' '.join(args))
 
     try:
         connection, cursor = connectDB()
-
-        eFileName = 'error.csv'
+        eFileName = 'error.tsv'
         eTableName = 'command_log'
-        eColumnList = ['station_code', 'execution_time', 'file_descriptor', 'command']
+        eColumnList = ['station_code', 'execution_time', 'user_account', 'uid', 'executed_file', 'file_descriptor', 'command']
 
         if isfile(eFileName):
             logger('Found previous log that could not be saved properly to DB server. Try again to save those...')
@@ -126,7 +119,7 @@ def logError(er, *args):
             errorFile = list(errorFile.values.tolist())
             for row in errorFile:
                 row[3] = connection.escape_string(row[3])
-            query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES (%s, %s, %s, %s);"
+            query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES (%s, %s, %s, %s, %s, %s, %s);"
             cursor.executemany(query, errorFile)
             connection.commit()
             if int(cursor.rowcount) > 1:
@@ -135,20 +128,23 @@ def logError(er, *args):
                 messageVerb = 'was'
             logger('Previous', str(cursor.rowcount), 'log', messageVerb, 'inserted.')
             system(f'rm -rf {eFileName}')
-            logger('error.csv deleted.')
-        query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES ('{station_code}', '{execution_time}', 2, '{connection.escape_string(errors)}');"
-                
+            logger(f'{eFileName} deleted.')
+        query = f"INSERT INTO {eTableName} ({', '.join(eColumnList)}) VALUES ('{station_code}', '{execution_time}', '{user_account}', {uid}, '{executed_file}', 2, '{connection.escape_string(errors)}');"
         cursor.execute(query)
         connection.commit()
-        logger(f"Error data '{station_code}', {execution_time}, 2, {errors} insertion success.")
+        logger(f"Error data '{station_code}', {execution_time}, '{user_account}', {uid}, {executed_file}, 2, {errors} insertion success.")
 
     except Exception as e:
         logger(f'Error logging process failed due to ERROR: {str(e)}')
+        if isfile(eFileName):
+            eFileFlag = True
+        else:
+            eFileFlag = False
         with open(eFileName, 'a', encoding='utf8') as f:
-            if isfile(eFileName):
+            if eFileFlag:
                 f.write('\n')
-            f.write(f'{station_code}\t{execution_time}\t2\t{errors}')
-        logger(f"Error data '{station_code}', {execution_time}, 2, {errors} saved locally in {eFileName}")
+            f.write(f'{station_code}\t{execution_time}\t{user_account}\t{uid}\t{executed_file}\t2\t{errors}')
+        logger(f"Error data '{station_code}', {execution_time}, '{user_account}', {uid}, 2, {errors} saved locally in {eFileName}")
 
     finally:
         connection.close()
@@ -160,7 +156,7 @@ def logError(er, *args):
 
 
 
-""" Codes """
+''' Codes '''
 if __name__ == "__main__":
     # Connect to Honeywell HPMA115S0-XXX 
     try:
@@ -208,20 +204,23 @@ if __name__ == "__main__":
             logger('Previous', str(cursor.rowcount), 'measurement', messageVerb, 'inserted.')
             system(f'rm -rf {mFileName}')
             logger(f'{mFileName} deleted. Continue to next step!')
-
         query = f"INSERT INTO {mTableName} ({', '.join(mColumnList)}) VALUES ('{station_code}', '{measured_time}', {pm10}, {pm25});"
         cursor.execute(query)
         connection.commit()
         logger(f"'{station_code}', {measured_time}, {pm10}, {pm25} inserted.")
 
-
     except Exception as e:
-        logError(e, 'Sending measurements failed! ERROR: ' + str(e))
+        if isfile(mFileName):
+            mFileFlag = True
+        else:
+            mFileFlag = False
         # Save measurement to local drive when error occurs
         with open(mFileName, 'a', encoding='utf-8') as f:
-            if isfile(mFileName):
+            if mFileFlag:
                 f.write('\n')
-            f.write(','.join([station_code, measured_time, pm10, pm25]))
+            f.write(','.join([str(eval(col)) for col in mColumnList]))
+        logger('Measurement data saved in locally for error while sending data')
+        logError(e, 'Sending measurements failed! ERROR: ' + str(e))
 
     finally:
         connection.close()
