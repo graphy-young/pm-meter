@@ -17,9 +17,34 @@ def logger(*args):
     message = f"[{__file__} {str(datetime.now())}] {str(' '.join(args))}"
     print(message)
 
-######### 나중에 추가하기
-def dbLogger(*args):
-    connectDB()
+def dbLogger(fileDescriptor, *args):
+    """
+        Insert log message into remote DB server
+    """
+
+    if str(type(fileDescriptor))[8:-2] == 'int' and (0 <= int(fileDescriptor) <= 2):
+        pass
+    else:
+        raise WrongInputException
+
+    connection, cursor = connectDB()
+    message = str(' '.join(args))
+
+    lTableName = 'command_log'
+    lColumnList = ['station_code', 'execution_time', 'user_account', 'uid', 'executed_file', 'file_descriptor', 'command']
+    
+    station_code = getStationCode()
+    execution_time = str(datetime.now())
+    user_account = getlogin()
+    uid = str(getresuid()[0])
+    executed_file = abspath(__file__)
+    file_descriptor = fileDescriptor
+
+    query = f"INSERT INTO {lTableName} ({', '.join(lColumnList)}) VALUES ('{station_code}', '{execution_time}', '{user_account}', {uid}, '{executed_file}', {file_descriptor}, '{message}');"
+    
+    cursor.execute(query)
+    connection.commit()
+    logger('DB log insertion completed.')
 
 def syncTime():
     """ 
@@ -73,10 +98,7 @@ def getStationCode():
         Get station code using RPi's CPU seiral code
     """
     try:
-        connection = pymysql.connect(host=keys.host, port=keys.port, 
-                                    user=keys.userName, password=keys.password, 
-                                    database=keys.dbName)
-        cursor = connection.cursor()
+        connection, cursor = connectDB()
 
         rpiSerial = getSerial()
 
