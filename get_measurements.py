@@ -6,6 +6,7 @@ import pandas as pd # to read local-stored data
 from os import system, getresuid, getlogin # to execute linux command
 from os.path import isfile, abspath # check whether local file exists
 from datetime import datetime # to load measured & executed time
+from modules.ds3231 import SDL_DS3231
 
 
 ''' function definition  '''

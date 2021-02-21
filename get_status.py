@@ -1,5 +1,5 @@
 ''' Module import '''
-from modules import x750ups
+from modules import x750ups, ds3231
 import keys
 import re
 import pymysql
@@ -28,8 +28,8 @@ if __name__ == "__main__":
         link_quality = int(re.search('Link Quality=+\d\d+/+\d\d', wirelessInfo[5]).group(0)[13:].split('/')[0])
         signal_level = int(re.search('Signal level=-+\d+ dBm', wirelessInfo[5]).group(0)[13:-4])
         stored_data = 0
-        cpu_temperature = CPUTemperature().temperature # NOTE) RPi CPU 온도 읽기
-        rtc_temperature = float(0) # NOTE) RTC 모듈 온도센서에서 온도 읽기
+        cpu_temperature = CPUTemperature().temperature
+        rtc_temperature = ds3231.SDL_DS3231(1, 0x68).getTemp()
 
         sFileName = 'status.csv'
         sTableName = 'device_status'
