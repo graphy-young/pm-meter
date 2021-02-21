@@ -49,15 +49,21 @@ def dbLogger(fileDescriptor, *args):
 
 def syncTime():
     """ 
-        Sync device's time via remote time server
+        Sync device's time via remote time server then write in DS3231 RTC module.
+        If failed, read datetime from RTC.
     """
     try:
         # Load real time from external server. if there's no network connection, it occurs errors
-        system('sudo rdate -s time.bora.net') 
+        system('sudo rdate -s time.bora.net')
         logger('System time sync got successful')
+        SDL_DS3231().write_now()
+        logger('Datetime in RTC module has been overwritten with server time')
 
     except Exception as e:
         msg = (f'time sync got failed! ERROR: {str(e)}')
+        rtc_datetime = SDL_DS3231().read_datetime() # returns datetime object
+        system(f'date {rtc_datetime.strftime("%m%d%H%M%y.%S")}')
+        logger(f'Reading datetime from RTC module complete now: {str(rtc_datetime)}')
         logError(e, msg)
 
 def connectDB():
@@ -118,7 +124,11 @@ def getStationCode():
     return stationCode
 
 def logError(er, *args):
-    
+    """
+        Log error data to database server
+    """
+    logger('ERROR OCCURED! EXECUTE LOG ERROR PROCESS.')
+
     station_code = getStationCode()
     execution_time = str(datetime.now())
     user_account = getlogin()
