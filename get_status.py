@@ -1,5 +1,5 @@
 ''' Module import '''
-import x750ups
+from modules import x750ups
 import keys
 import re
 import pymysql
