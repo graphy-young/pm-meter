@@ -10,6 +10,7 @@ Some codes won't be open for security.
   * Python 3.6 or higher
 * Honeywell HPMA115S0-XXX
 * Geekworm X750 UPS module & 18650 cells Lithium Ion batteries * 4
+* DS3231 RTC moudle
 * External MySQL DB server to record measured data
 * Wi-Fi Network for portable use
 
@@ -34,3 +35,7 @@ dbName = 'dbName'
 # Memo
 * `keys.py` Required which have database connection information in same directory 
 * Original Arduino(.ino) file were removed for some hardware changes!
+
+# Dependency
+* Honeywell HPMA115S0 Particulate Sensor Python interface (https://github.com/FEEprojects/honeywell-hpma115s0)
+* Raspberry Pi Python Library for SwitchDoc Labs DS3231/AT24C32 RTC Module (https://github.com/switchdoclabs/RTC_SDL_DS3231)
