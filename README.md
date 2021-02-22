@@ -23,11 +23,24 @@ Some codes won't be open for security.
 * Using `database/raspmeasure_model.mwb`, excecute forward engineering via MySQL Workbench
 * Create `keys.py` to conenct MySQL DB server. file should be like below
 ```
+ssid = 'network name'
+wpa_key = 'wifi password'
+
 host = 'hostaddress.com'
 port = 1000
 userName = 'userName'
 password = 'password'
 dbName = 'dbName'
+
+
+if __name__ == "__main__":
+    from sys import argv, exit
+    from get_measurements import logger
+    if len(argv) > 2:
+        logger('this only accepts one parameter')
+        exit()
+    elif argv[1] in ('ssid', 'wpa_key'):
+        print(eval(argv[1]))
 ```
   * `root` account is not recommended as it can make security threats
 * Excecute `init.sh` on your RPi
