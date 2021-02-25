@@ -16,6 +16,10 @@ if __name__ == "__main__":
     
     syncTime()
 
+    sFileName = '~/raspmeasure/status.csv'
+    sTableName = 'device_status'
+    sColumnList = ['station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 
+                    'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature']
     try:
         connection, cursor = connectDB()
 
@@ -24,18 +28,18 @@ if __name__ == "__main__":
         battery_voltage = x750ups.readVoltage(x750ups.bus)
         battery_capacity = x750ups.readCapacity(x750ups.bus)
         wirelessInfo = popen("iwconfig wlan0 | awk '{$1=$1;print}'").read().split('\n')
-        ssid = re.search('ESSID:"+(\w)+"', wirelessInfo[0]).group(0)[7:-1]
-        link_quality = int(re.search('Link Quality=+\d\d+/+\d\d', wirelessInfo[5]).group(0)[13:].split('/')[0])
-        signal_level = int(re.search('Signal level=-+\d+ dBm', wirelessInfo[5]).group(0)[13:-4])
+        try:
+            ssid = re.search('ESSID:"+(\w)+"', wirelessInfo[0]).group(0)[7:-1]
+            link_quality = int(re.search('Link Quality=+\d\d+/+\d\d', wirelessInfo[5]).group(0)[13:].split('/')[0])
+            signal_level = int(re.search('Signal level=-+\d+ dBm', wirelessInfo[5]).group(0)[13:-4])
+        except:
+            ssid = None
+            link_quality = None
+            signal_level = None
         stored_data = 0
         cpu_temperature = CPUTemperature().temperature
         rtc_temperature = ds3231.SDL_DS3231(1, 0x68).getTemp()
 
-        sFileName = 'status.csv'
-        sTableName = 'device_status'
-        sColumnList = ['station_code', 'device_time', 'battery_voltage', 'battery_capacity', 'ssid', 
-                        'link_quality', 'signal_level', 'stored_data', 'cpu_temperature', 'rtc_temperature']
-        
         if isfile(sFileName):
             logger('Found previous status that could not be stored to DB server. Try again to save those...')
             statusFile = pd.read_csv(sFileName, encoding='utf-8', names=sColumnList)

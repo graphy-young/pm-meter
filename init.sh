@@ -42,3 +42,6 @@ echo "raspmeasure-$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)" | sudo t
 sudo update-rc.d lightdm disable
 
 echo "enable_uart=1" | sudo tee -a /boot/config.txt
+
+echo "ALL PROCESS COMPLETED. RPi WILL REBOOT"
+sudo reboot

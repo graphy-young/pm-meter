@@ -139,7 +139,7 @@ def logError(er, *args):
 
     try:
         connection, cursor = connectDB()
-        eFileName = 'error.tsv'
+        eFileName = '~/raspmeasure/error.tsv'
         eTableName = 'command_log'
         eColumnList = ['station_code', 'execution_time', 'user_account', 'uid', 'executed_file', 'file_descriptor', 'command']
 
@@ -204,7 +204,8 @@ if __name__ == "__main__":
 
     # Get datetime & pollution data from the sensor
     try:
-        measured_time, pm10, pm25 = str(sensor.read()).split(',')
+        measured_time, pm10, pm25 = str(sensor.read()).split(',') # NOTE) measured_time returns GMT
+        measured_time = datetime.now()
         logger(f'[DATA] measured_time: {measured_time}, PM10: {pm10}, PM25: {pm25}')
 
     except Exception as e:
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 
         station_code = getStationCode()
 
-        mFileName = 'measurements.csv'
+        mFileName = '~/raspmeasure/measurements.csv'
         mTableName = 'air_quality'
         mColumnList = ['station_code', 'measured_time', 'pm10', 'pm25']
 
