@@ -39,7 +39,7 @@ sudo mv /etc/hostname /etc/hostname.bak
 echo "raspmeasure-$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)" | sudo tee -a /etc/hostname
 
 # Disable GUI boot option
-sudo update-rc.d lightdm disable
+#sudo update-rc.d lightdm disable
 
 echo "enable_uart=1" | sudo tee -a /boot/config.txt
 
