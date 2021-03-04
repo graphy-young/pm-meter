@@ -18,7 +18,7 @@ sudo systemctl start ssh
 # Enable I2C communication & Disable Bluetooth
 echo "i2c_bcm2835
 rtc-ds1307" | sudo tee -a /etc/modules
-echo "dtparam=i2c_arm=onå
+echo "dtparam=i2c_arm=on"
 dtoverlay=i2c-rtc,ds3231,disable-bt" | sudo tee -a /boot/config.txt
 
 # Setup wireless network
