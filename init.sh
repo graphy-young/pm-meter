@@ -32,8 +32,8 @@ network={
 }" | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf
 
 # Modify hostname with RPi's serial code
-sudo cp /etc/hosts /etc/hosts.bak
-sudo head -n -1 | sudo tee -a /etc/hosts
+sudo mv /etc/hosts /etc/hosts.bak
+sudo head -n -1 /etc/hosts.bak | sudo tee -a /etc/hosts
 echo -e "127.0.1.1\traspmeasure-$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)" | sudo tee -a /etc/hosts
 sudo mv /etc/hostname /etc/hostname.bak
 echo "raspmeasure-$(cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2)" | sudo tee -a /etc/hostname
