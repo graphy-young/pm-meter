@@ -139,7 +139,7 @@ def logError(er, *args):
 
     try:
         connection, cursor = connectDB()
-        eFileName = '~/raspmeasure/error.tsv'
+        eFileName = '/home/pi/raspmeasure/error.tsv'
         eTableName = 'command_log'
         eColumnList = ['station_code', 'execution_time', 'user_account', 'uid', 'executed_file', 'file_descriptor', 'command']
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
         station_code = getStationCode()
 
-        mFileName = '~/raspmeasure/measurements.csv'
+        mFileName = '/home/pi/raspmeasure/measurements.csv'
         mTableName = 'air_quality'
         mColumnList = ['station_code', 'measured_time', 'pm10', 'pm25']
 
