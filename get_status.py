@@ -36,7 +36,7 @@ if __name__ == "__main__":
             battery_capacity = None
 
         try:
-            ethernetInfo = popen("sudo ifconfig eth0 | awk '{$1=$1;print}'").read().split('\n')
+            ethernetInfo = popen("/sbin/ifconfig eth0 | awk '{$1=$1;print}'").read().split('\n')
             if ethernetInfo[1].startswith('inet '):
                 ethernet_connection = True
                 ethernet_IP = ethernetInfo[1].split()[1]
@@ -51,9 +51,9 @@ if __name__ == "__main__":
             ethernet_gateway = None
 
         try:
-            wirelessInfo = popen("sudo iwconfig wlan0 | awk '{$1=$1;print}'").read().split('\n')
+            wirelessInfo = popen("/sbin/iwconfig wlan0 | awk '{$1=$1;print}'").read().split('\n')
             ssid = re.search('ESSID:"+(\w)+"', wirelessInfo[0]).group(0)[7:-1]
-            wirelessInfo2 = popen("sudo ifconfig wlan0 | awk '{$1=$1;print}'").read().split('\n')
+            wirelessInfo2 = popen("/sbin/ifconfig wlan0 | awk '{$1=$1;print}'").read().split('\n')
             wireless_IP = wirelessInfo2[1].split()[1]
             wireless_gateway = wirelessInfo2[1].split()[5]
             link_quality = int(re.search('Link Quality=+\d\d+/+\d\d', wirelessInfo[5]).group(0)[13:].split('/')[0])
